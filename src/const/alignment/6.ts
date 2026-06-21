@@ -1,0 +1,2 @@
+const ALIGNMENT_PATTERNS_6 = [1428];
+export default ALIGNMENT_PATTERNS_6;
