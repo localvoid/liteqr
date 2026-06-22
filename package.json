@@ -1,7 +1,7 @@
 {
   "name": "liteqr",
   "version": "1.0.0",
-  "description": "Fast and Compact (1.5KB) QR Code Encoder / Generator",
+  "description": "Fast and Compact (1.4KB) QR Code Encoder / Generator",
   "keywords": [
     "qr",
     "qrcode"

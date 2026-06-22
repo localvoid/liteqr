@@ -79,7 +79,7 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
   const data = new Uint8Array(dataSize);
   // Final Interleaved Payload
   const out = new Uint8Array(preset.ts);
-  let blockSize = preset.g1s;
+  let s = preset.g1s;
   let i = payload.length;
   let j;
   let k;
@@ -111,13 +111,13 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
 
   // Reed-Solomon ECC
   p = 0;
-  const ecc = new Uint8Array(blockSize + ecSize + 1);
+  const ecc = new Uint8Array(s + ecSize + 1);
   for (i = 0; i < blocksCount; i++) {
-    if (i === g1) blockSize++;
-    const block = data.subarray(p, (p += blockSize));
+    if (i === g1) s++;
+    const block = data.subarray(p, (p += s));
     ecc.set(block, 0);
-    ecc.fill(0, blockSize);
-    for (j = 0; j < blockSize; j++) {
+    ecc.fill(0, s);
+    for (j = 0; j < s; j++) {
       if (ecc[j]) {
         // Get the log of the leading coefficient
         // GF(256) logarithm: returns the exponent such that 2^log(x) = x
@@ -132,41 +132,55 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
 
     // Interleave data and EC blocks
     k = i;
-    for (j = 0; j < blockSize; j++) {
+    for (j = 0; j < s; j++) {
       if (j === g1s) k -= g1;
       out[k] = block[j];
       k += blocksCount;
     }
 
     k = dataSize + i;
-    for (j = blockSize; j < blockSize + ecSize; j++) {
+    for (j = s; j < s + ecSize; j++) {
       out[k] = ecc[j];
       k += blocksCount;
     }
   }
 
   // Place masked data on a matrix
-  let x = gridSize - 1;
-  let y = x;
-  for (i = 0; i < out.length; i++) {
-    const byte = out[i];
-    for (j = 7; j >= 0; j--) {
+  let x = gridSize - 2;
+  let y = gridSize;
+  i = 0; // Data byte offset
+  s = 7; // Bit offset
+
+  for (let yDir = -1; x >= 0; x -= 2) {
+    // skip the vertical timing pattern at column 6
+    if (x === 5) x = 4;
+
+    while (((y += yDir), y >= 0 && y < gridSize)) {
       p = y * gridSize + x;
-      k = result[p];
-      result[p] = (byte >> j) & 1;
-      // Apply a mask pattern 0
-      if ((x + y) % 2 === 0) {
-        result[p] ^= 1;
+      // right → left column order
+      for (j = 1; j >= 0; j--) {
+        k = p + j;
+        if (result[k] === 0) {
+          if (i < out.length) {
+            result[k] = (out[i] >> s) & 1;
+            if (--s < 0) {
+              s = 7;
+              i++;
+            }
+          }
+          if ((x + j + y) % 2 === 0) {
+            result[k] ^= 1;
+          }
+        }
       }
-      x += (k & 3) - 2;
-      y += (k >> 2) - 8;
     }
+    yDir = -yDir; // reverse direction
   }
 
   return result;
 };
 
-// Add functional patterns and data path:
+// Add functional patterns:
 // - Finders
 // - Alignments
 // - Timings
@@ -184,7 +198,6 @@ const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
   }
 
   const size = preset.gs;
-  const totalBits = preset.ts << 3;
 
   // Fill a rectangular region in the QR code matrix
   // data: the QR code matrix (1D array representing 2D grid)
@@ -273,42 +286,5 @@ const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
     h1 >>= 1;
     data[p1--] = v; // top-left
     data[(p2 += size)] = v; // bottom-left
-  }
-
-  // Encode the zigzag data-placement path into `data` matrix as a chain
-  // of (dx, dy) offsets.
-  //
-  // Byte layout:
-  //   bits 1..0 : dx + 2   (dx ∈ {-2, -1, 0, +1})
-  //   bits 6..2 : dy + 8   (dy ∈ [-8, +8])
-  let x0 = size - 1;
-  let x1 = size - 2;
-  let y0 = x0;
-  let y1 = size;
-  i = 0;
-
-  for (let yDir = -1; x1 >= 0; x1 -= 2) {
-    // skip the vertical timing pattern at column 6
-    if (x1 === 5) x1 = 4;
-
-    while (((y1 += yDir), y1 >= 0 && y1 < size)) {
-      p1 = y1 * size + x1;
-      // right → left column order
-      for (let j = 1; j >= 0; j--) {
-        p2 = p1 + j;
-        if (data[p2] === 0) {
-          if (i++ < totalBits) {
-            const x = x1 + j;
-            data[y0 * size + x0] = (x - x0 + 2) | ((y1 - y0 + 8) << 2);
-            x0 = x;
-            y0 = y1;
-          } else if ((x1 + j + y1) % 2 === 0) {
-            // Apply mask pattern 0 to remainder bits
-            data[p2] ^= 1;
-          }
-        }
-      }
-    }
-    yDir = -yDir; // reverse direction
   }
 };

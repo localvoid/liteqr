@@ -4,8 +4,8 @@ Fast and Compact QR Code Encoder / Generator.
 
 ## Features
 
-- **Compact**: ~1.5KB minified, zero dependencies.
-- **Fast**: pre-computed presets, cached functional patterns and data paths.
+- **Compact**: ~1.4KB minified, zero dependencies.
+- **Fast**: pre-computed presets, cached functional patterns.
 - **Presets**: 40 versions and 4 error correction levels (L, M, Q, H).
 - **Fully Tested**: Identical output to the reference [nayuki](https://github.com/nayuki/QR-Code-generator/) implementation. 
 
@@ -113,9 +113,9 @@ liteqr encodes all payloads as ECI (designator 26 = UTF-8) byte-mode segments. T
 
 Each version + error-correction-level combination is shipped as a separate preset module (`liteqr/presets/{version}-{level}`). A preset contains grid size, payload size, generator polynomial, headers, alignment pattern positions, etc.
 
-### Cached Functional Patterns + Data Path
+### Cached Functional Patterns
 
-The finder, alignment, timing, format information patterns and data path are cached in a preset object. This avoids re-drawing static patterns and re-calculating data path positions for every QR code.
+The finder, alignment, timing and format information patterns are cached in a preset object. This avoids re-drawing static patterns for every QR code.
 
 ### Mask Pattern 0
 
