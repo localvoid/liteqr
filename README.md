@@ -2,6 +2,10 @@
 
 Fast and Compact QR Code Encoder / Generator.
 
+## Why Another Library?
+
+There are already a lot of different QR Code libraries, but this one is specifically optimized for generating QR Codes on web-sites/PWAs directly in a browser (canvas) with a primary focus on reduced code size (~1.4KB).
+
 ## Features
 
 - **Compact**: ~1.4KB minified, zero dependencies.
@@ -111,15 +115,11 @@ liteqr encodes all payloads as ECI (designator 26 = UTF-8) byte-mode segments. T
 
 ### Pre-computed Presets
 
-Each version + error-correction-level combination is shipped as a separate preset module (`liteqr/presets/{version}-{level}`). A preset contains grid size, payload size, generator polynomial, headers, alignment pattern positions, etc.
-
-### Cached Functional Patterns
-
-The finder, alignment, timing and format information patterns are cached in a preset object. This avoids re-drawing static patterns for every QR code.
+Each version + error-correction-level combination is shipped as a separate preset module (`liteqr/presets/{version}-{level}`). A preset contains grid size, payload size, generator polynomial, headers, alignment pattern positions, etc. The downside is that you must manually select a version with enough capacity for your payload — the library won't automatically choose the smallest version that fits. The upside is that since you explicitly control which version is used, you know the exact grid size and pixel dimensions upfront, which allows you to render onto a canvas without any aliasing or rounding artifacts.
 
 ### Mask Pattern 0
 
-Only mask pattern 0 (`(x + y) % 2 === 0`) is supported. The QR specification defines 8 patterns and recommends selecting the one that minimizes errors. Pattern 0 is the simplest to compute and works well for most payloads. This can result in slightly lower scan quality compared to an encoder that tries to find the best mask.
+Only mask pattern 0 (`(x + y) % 2 === 0`) is supported. The QR specification defines 8 patterns and recommends selecting the one that minimizes errors. Since this library is optimized for web-site rendering, QR codes will be displayed on good screens with clean rendering, making the difference between mask patterns negligible in practice.
 
 ## License
 
