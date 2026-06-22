@@ -11,7 +11,7 @@ There are already a lot of different QR Code libraries, but this one is specific
 - **Compact**: ~1.4KB minified, zero dependencies.
 - **Fast**: pre-computed presets, cached functional patterns.
 - **Presets**: 40 versions and 4 error correction levels (L, M, Q, H).
-- **Fully Tested**: Identical output to the reference [nayuki](https://github.com/nayuki/QR-Code-generator/) implementation. 
+- **Fully Tested**: Identical output to the reference [nayuki](https://github.com/nayuki/QR-Code-generator/) implementation.
 
 ## Install
 
@@ -34,17 +34,18 @@ const matrix = qrEncode(QR_2_L, text);
 
 const size = QR_2_L.gs; // grid size (e.g. 25 for version 2)
 const scale = 10; // pixels per module
+const ssize = size * scale; // scaled size
 
 const canvas = document.createElement('canvas');
-canvas.width = size * scale;
-canvas.height = size * scale;
+canvas.width = canvas.height = ssize;
 const ctx = canvas.getContext('2d');
 
 let p = 0;
-for (let y = 0; y < size; y++) {
-  for (let x = 0; x < size; x++) {
+for (let y = 0; y < ssize; y += scale) {
+  for (let x = 0; x < ssize; x += scale) {
+    // Fill only values with the least significant bit 1
     if (matrix[p++] & 1) {
-      ctx.fillRect(x * scale, y * scale, scale, scale);
+      ctx.fillRect(x, y, scale, scale);
     }
   }
 }
@@ -106,6 +107,51 @@ liteqr/presets/{version}-{level}
 | 38      | 2698 | 2098 | 1498 | 1138 |
 | 39      | 2808 | 2212 | 1578 | 1218 |
 | 40      | 2952 | 2330 | 1662 | 1272 |
+
+### Grid Size
+
+| Version | Size |
+| ------- | ---- |
+| 1       | 21   |
+| 2       | 25   |
+| 3       | 29   |
+| 4       | 33   |
+| 5       | 37   |
+| 6       | 41   |
+| 7       | 45   |
+| 8       | 49   |
+| 9       | 53   |
+| 10      | 57   |
+| 11      | 61   |
+| 12      | 65   |
+| 13      | 69   |
+| 14      | 73   |
+| 15      | 77   |
+| 16      | 81   |
+| 17      | 85   |
+| 18      | 89   |
+| 19      | 93   |
+| 20      | 97   |
+| 21      | 101  |
+| 22      | 105  |
+| 23      | 109  |
+| 24      | 113  |
+| 25      | 117  |
+| 26      | 121  |
+| 27      | 125  |
+| 28      | 129  |
+| 29      | 133  |
+| 30      | 137  |
+| 31      | 141  |
+| 32      | 145  |
+| 33      | 149  |
+| 34      | 153  |
+| 35      | 157  |
+| 36      | 161  |
+| 37      | 165  |
+| 38      | 169  |
+| 39      | 173  |
+| 40      | 177  |
 
 ## Design Trade-offs
 
