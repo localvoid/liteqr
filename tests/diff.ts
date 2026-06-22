@@ -1,3 +1,5 @@
+// Checks differences between reference nayuki implementation and liteqr
+
 import type { QRPreset } from '../src/index.js';
 import { formatQRCode } from '../src/format.js';
 import { qrEncode } from '../src/index.js';
