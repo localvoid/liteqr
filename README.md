@@ -4,7 +4,7 @@ Fast and Compact QR Code Encoder / Generator.
 
 ## Why Another Library?
 
-There are already a lot of different QR Code libraries, but this one is specifically optimized for generating QR Codes on web-sites/PWAs directly in a browser (canvas) with a primary focus on reduced code size (~1.4KB).
+There are already a lot of different QR Code libraries, but this one is specifically optimized for generating QR Codes on web-sites directly in a browser (canvas) with a primary focus on reduced code size (~1.4KB).
 
 ## Features
 
@@ -34,11 +34,15 @@ const matrix = qrEncode(QR_2_L, text);
 
 const size = QR_2_L.gs; // grid size (e.g. 25 for version 2)
 const scale = 10; // pixels per module
+const quietZone = 4 * scale; // quiet zone (4 modules padding)
 const ssize = size * scale; // scaled size
 
 const canvas = document.createElement('canvas');
-canvas.width = canvas.height = ssize;
+canvas.width = canvas.height = ssize + quietZone * 2;
 const ctx = canvas.getContext('2d');
+
+// Shift origin by quiet zone offset
+ctx.translate(quietZone, quietZone);
 
 let p = 0;
 for (let y = 0; y < ssize; y += scale) {
