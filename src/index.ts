@@ -147,7 +147,7 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
 
   // Place masked data on a matrix
   let x = gridSize - 1;
-  let y = gridSize - 1;
+  let y = x;
   for (i = 0; i < out.length; i++) {
     const byte = out[i];
     for (j = 7; j >= 0; j--) {
@@ -232,10 +232,8 @@ const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
   // Draw finder patterns (the three large squares in corners)
   // Top-left and bottom-left finder pattern separators
   rect(7, 1, 8, 2);
-  // rect(7, 2, 9, 2);
   // Top-right and bottom-right finder pattern separators
   rect(size - 8, 8, 8, 2);
-  // rect(size - 8, 8, 9, 2);
   // Horizontal timing pattern (alternating black/white modules)
   j = 7 * size;
   for (i = j - size; i < j; i++) {
@@ -284,8 +282,8 @@ const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
   //   bits 1..0 : dx + 2   (dx ∈ {-2, -1, 0, +1})
   //   bits 6..2 : dy + 8   (dy ∈ [-8, +8])
   let x0 = size - 1;
-  let y0 = x0;
   let x1 = size - 2;
+  let y0 = x0;
   let y1 = size;
   i = 0;
 
