@@ -62,12 +62,12 @@ const LOG_TABLES = new Uint8Array(512);
 
 // Generates a Uint8Array with a QR code matrix (size x size)
 export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
+  const gridSize = preset.gs;
   if (preset.c === null) {
-    addFunctionalPatterns((preset.c = new Uint8Array(preset.gs ** 2)), preset);
+    addFunctionalPatterns((preset.c = new Uint8Array(gridSize ** 2)), preset);
   }
   // Final result matrix
   const result = preset.c.slice();
-  const gridSize = preset.gs;
   const g1 = preset.g1;
   const g1s = preset.g1s;
   const blocksCount = g1 + preset.g2;
@@ -79,7 +79,8 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
   const data = new Uint8Array(dataSize);
   // Final Interleaved Payload
   const out = new Uint8Array(preset.ts);
-  let s = preset.g1s;
+  const ecc = new Uint8Array(g1s + ecSize + 1);
+  let s = g1s;
   let i = payload.length;
   let j;
   let k;
@@ -111,7 +112,6 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
 
   // Reed-Solomon ECC
   p = 0;
-  const ecc = new Uint8Array(s + ecSize + 1);
   for (i = 0; i < blocksCount; i++) {
     if (i === g1) s++;
     const block = data.subarray(p, (p += s));
