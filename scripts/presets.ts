@@ -478,7 +478,7 @@ for (let i = 0; i < 40; i++) {
     s += `  g: g.G${ec[0]},\n`;
     s += `  g1: ${G1_COUNT[m][i]},\n`;
     s += `  g1s: ${G1_SIZE[m][i]},\n`;
-    s += `  g2: ${G2_COUNT[m][i]},\n`;
+    s += `  gt: ${G1_COUNT[m][i] + G2_COUNT[m][i]},\n`;
     {
       const maskId = 0;
       const info = ((m ^ 1) << 3) | maskId;

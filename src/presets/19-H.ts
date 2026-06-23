@@ -1,6 +1,6 @@
 import type { QRPreset } from '../index.js';
-import a from '../const/alignment/19.js';
 import * as g from '../const/generators.js';
+import a from '../const/alignment/19.js';
 
 const preset_19_H: QRPreset = {
   c: null,
@@ -14,7 +14,7 @@ const preset_19_H: QRPreset = {
   g: g.G26,
   g1: 9,
   g1s: 13,
-  g2: 16,
+  gt: 25,
   h1: 5769,
   h2: 79154,
 };

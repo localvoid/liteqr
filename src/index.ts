@@ -23,8 +23,8 @@ export interface QRPreset {
   // Short Blocks
   readonly g1: number;
   readonly g1s: number;
-  // Long Blocks
-  readonly g2: number;
+  // Total Short+Long Blocks
+  readonly gt: number;
 
   /**
    * ECL and Mask Header (15-Bit BCH Code):
@@ -62,29 +62,30 @@ const LOG_TABLES = new Uint8Array(512);
 
 // Generates a Uint8Array with a QR code matrix (size x size)
 export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
-  const gridSize = preset.gs;
+  let gridSize = preset.gs;
   if (preset.c === null) {
     addFunctionalPatterns((preset.c = new Uint8Array(gridSize ** 2)), preset);
   }
   // Final result matrix
-  const result = preset.c.slice();
-  const g1 = preset.g1;
-  const g1s = preset.g1s;
-  const blocksCount = g1 + preset.g2;
-  const ecSize = preset.ec;
+  let result = preset.c.slice();
+  let g = preset.g1;
+  let g1s = preset.g1s;
+  let y = preset.gt;
+  let ecSize = preset.ec;
   // Generator polynomial for ECC
-  const gen = preset.g;
-  const dataSize = preset.ds;
-  // Payload Header + Payload + Finalizer + Alternating Padding
-  const data = new Uint8Array(dataSize);
+  let gen = preset.g;
+  let dataSize = preset.ds;
   // Final Interleaved Payload
-  const out = new Uint8Array(preset.ts);
-  const ecc = new Uint8Array(g1s + ecSize + 1);
+  let out = new Uint8Array(preset.ts);
+  let ecc = new Uint8Array(g1s + ecSize + 1);
+  // Payload Header + Payload + Finalizer + Alternating Padding
+  let data = new Uint8Array(dataSize);
   let s = g1s;
   let i = payload.length;
-  let j;
+  let j = 0x11;
   let k;
   let p;
+  let x;
 
   // ECI Indicator (0111)
   // UTF-8 Designator (00011010)
@@ -103,29 +104,28 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
   p += i;
 
   // Pad with alternating bytes 0xEC and 0x11 to fill remaining capacity
-  k = 0x11;
   // ++p — advance cursor to add terminator zeros
   while (++p < dataSize) {
     // 0x11 ^ 0xEC = 253
-    data[p] = k ^= 253;
+    data[p] = j ^= 253;
   }
 
   // Reed-Solomon ECC
   p = 0;
-  for (i = 0; i < blocksCount; i++) {
-    if (i === g1) s++;
-    const block = data.subarray(p, (p += s));
-    ecc.set(block, 0);
+  for (i = 0; i < y; i++) {
+    if (i === g) s++;
+    payload = data.subarray(p, (p += s));
+    ecc.set(payload);
     ecc.fill(0, s);
     for (j = 0; j < s; j++) {
       if (ecc[j]) {
         // Get the log of the leading coefficient
         // GF(256) logarithm: returns the exponent such that 2^log(x) = x
-        const shift = LOG_TABLES[ecc[j] + 255];
+        x = LOG_TABLES[ecc[j] + 255];
         // XOR with the generator polynomial scaled by the leading coefficient
         for (k = 0; k < gen.length; k++) {
           // GF(256) antilogarithm: returns 2^x mod 0x11d (the irreducible polynomial)
-          ecc[j + k] ^= LOG_TABLES[(gen[k] + shift) % 255];
+          ecc[j + k] ^= LOG_TABLES[(gen[k] + x) % 255];
         }
       }
     }
@@ -133,29 +133,30 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
     // Interleave data and EC blocks
     k = i;
     for (j = 0; j < s; j++) {
-      if (j === g1s) k -= g1;
-      out[k] = block[j];
-      k += blocksCount;
+      if (j === g1s) k -= g;
+      out[k] = payload[j];
+      k += y;
     }
 
     k = dataSize + i;
     for (j = s; j < s + ecSize; j++) {
       out[k] = ecc[j];
-      k += blocksCount;
+      k += y;
     }
   }
 
   // Place masked data on a matrix
-  let x = gridSize - 2;
-  let y = gridSize;
+  x = gridSize - 2;
+  y = gridSize;
   i = 0; // Data byte offset
   s = 7; // Bit offset
 
-  for (let yDir = -1; x >= 0; x -= 2) {
+  // g — y direction
+  for (g = -1; x >= 0; x -= 2) {
     // skip the vertical timing pattern at column 6
     if (x === 5) x = 4;
 
-    while (((y += yDir), y >= 0 && y < gridSize)) {
+    while (((y += g), y >= 0 && y < gridSize)) {
       p = y * gridSize + x;
       // right → left column order
       for (j = 1; j >= 0; j--) {
@@ -174,7 +175,7 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
         }
       }
     }
-    yDir = -yDir; // reverse direction
+    g = -g; // reverse direction
   }
 
   return result;
@@ -187,17 +188,22 @@ export const qrEncode = (preset: QRPreset, payload: Uint8Array): Uint8Array => {
 // - Version information
 // - Format information
 const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
+  let size = preset.gs;
+  let h1 = preset.h1;
+  let v = preset.h2;
+  let p1 = 8;
+  let p2 = 9 * size;
+  let i, j;
+
   // When log tables are ready, `LOG_TABLES[0]` should be `1`
   if (!LOG_TABLES[0]) {
     // Initialize GF(256) logarithm and antilogarithm tables
-    for (let i = 0, v = 1; i < 255; i++) {
-      LOG_TABLES[(LOG_TABLES[v + 255] = i)] = v;
-      v <<= 1;
-      if (v & 0x100) v ^= 0x11d;
+    for (i = 0, j = 1; i < 255; i++) {
+      LOG_TABLES[(LOG_TABLES[j + 255] = i)] = j;
+      j <<= 1;
+      if (j & 0x100) j ^= 0x11d;
     }
   }
-
-  const size = preset.gs;
 
   // Fill a rectangular region in the QR code matrix
   // data: the QR code matrix (1D array representing 2D grid)
@@ -221,13 +227,6 @@ const addFunctionalPatterns = (data: Uint8Array, preset: QRPreset) => {
       rect(p - (diameter >> 1) * (size + 1), diameter, diameter, i | 2);
     }
   };
-
-  let h1 = preset.h1;
-  let v = preset.h2;
-  let p1 = 8;
-  let p2 = 9 * size;
-  let i;
-  let j;
 
   // Alignment Patterns
   for (i of preset.a) {
